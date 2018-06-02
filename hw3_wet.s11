@@ -1,0 +1,188 @@
+.=torg +1000
+
+			
+		
+checkWin:
+			jsr pc findMoves
+			test r0
+			beq end_win
+			jsr pc numOfOptionsPlayer
+			mov r0 r1
+			jsr pc numOfOptionsRival
+			add r0 r1
+			test r1
+			beq who_have_more_stones
+			
+; בדיקה לאיזה שחקן יש יותר אבנים אם לשחקן המשחק אז ניצחון אם לא אז הפסד או תיקו (אולי עוד לא נגמר המשחק)
+who_have_more_stones 
+			cmp numOfStonesPlayer numOfStonesRival
+			bhi end_win
+			end_loose_tie
+			
+end_loose_tie:
+			add_minus_one_to_stuck
+			rts pc
+			
+end_win:
+			add_one_to_stuck
+			rts pc
+
+			
+			
+			
+add_one_to_stuck:
+			mov 1, -(sp)
+			
+add_minus_one_to_stuck:
+			mov -1, -(sp)
+			
+			
+			
+findMoves:  clr r0 ;num of moves Initialization to 0
+			clr r3 ;i index Initialization to 0
+			clr r5 ;j index Initialization to 0
+			mov 2(sp),Player ;//////////check if right ////////////
+			mov 4(sp),Board
+;startMvs - Updates the current position by the row and column index
+;moves to a black or white label in accordance with the number of the player	
+startMvs:	mov r3, r2 
+			add r5, r2     ;current position
+			cmp Player, #1 ;checks if player is one or two
+			beq whtsMvs
+;blksMvs - Checks whether the current location has a black stone 
+;And the stone option to move left	
+blksMvs:		
+			cmp Board(r2), #2 ;Checks whether the current location we are testing
+			;has a stone of player number 2
+			bne advncMvs 
+			cmp r2,#160 ;Checks whether the current location we are testing 
+			;is the last line for player 2
+			bge endcodeMvs 
+			add #16,r2 ;A possible step of the stone
+			cmp r3,#0 ;Checks if the stone is at the edge of the board 
+			;so this move is not possible
+			beq blksMvs2
+			cmp Board(r2), #1 ;Checks if there is a stone of the other player at the position
+			;which the stone could have moved to
+			beq eatblksMvs
+			cmp Board(r2), #2 ;Checks if there is a stone of the current player at the position
+			;which the stone could have moved to
+			beq blksMvs2
+			add #1,r0 ;Adds the step to the number of possible steps
+
+;blksMvs2 - Checks the stone option to move right				
+blksMvs2: 		add #4,r2 ;Another possible step of the stone
+			cmp r3,#16 ;Checks if the stone is at the edge of the board 
+			;so this move is not possible
+			beq advncMvs
+			cmp Board(r2),#1 ;Checks if there is a stone of the other player at the position
+			;which the stone could have moved to
+			beq eatblksMvs2
+			cmp Board(r2),#2 ;Checks if there is a stone of the current player at the position
+			;which the stone could have moved to
+			beq advncMvs
+			add #1,r0 ;Adds the step to the number of possible steps
+
+;advncMvs - Moves to the next position on the game board
+advncMvs:		cmp r3,#16 ;Checks if the stone is at the edge of the board
+			beq incrow
+			add #2,r3 ;Moves to the next position on the board
+			jmp startMvs
+
+;incrow - Moves to the beginning of the next line in the game board
+incrow:		clr r3 ;Move to the beginning of the line in the board
+			add #20,r5 ;Move to the next  line in the board
+			jmp startMvs
+;whtsMvs - Checks whether the current location has a white stone 
+;And the stone option to move left				
+whtsMvs:		cmp r2,#16 ;Checks whether the current location we are testing 
+			;is the last line for player 1
+			ble advncMvs
+			cmp r2,#200 ;Checks whether the current location we are testing 
+			;is larger than the board boundaries
+			bge endcodeMvs
+			cmp Board(r2),#1; Checks whether the current location we are testing
+			;has a stone of player number 1
+			bne advncMvs  
+			sub #16,r2 ;A possible step of the stone
+			cmp r3,#16 ;Checks if the stone is at the edge of the board 
+			;so this move is not possible
+			beq whtsMvs2
+			cmp Board(r2),#2 ;Checks if there is a stone of the other player at the position
+			;which the stone could have moved to
+			beq eatwhtsMvs
+			cmp Board(r2),#1 ;Checks if there is a stone of the current player at the position
+			;which the stone could have moved to
+			beq whtsMvs2
+			add #1,r0 ;Adds the step to the number of possible steps
+;whtsMvs2 - Checks the stone option to move right			
+whtsMvs2: 		sub #4,r2 ;Another possible step of the stone
+			cmp r3,#0 ;Checks if the stone is at the edge of the board
+			beq advncMvs
+			cmp Board(r2),#2 ;Checks if there is a stone of the other player at the position
+			;which the stone could have moved to
+			beq eatwhtsMvs2
+			cmp Board(r2),#1 ;Checks if there is a stone of the current player at the position
+			;which the stone could have moved to
+			beq advncMvs
+			add #1,r0 ;Adds the step to the number of possible steps
+			jmp advncMvs 
+;eatblksMvs - Checks whether a black stone has the possibility to eat in the left direction 			
+eatblksMvs:    cmp r3,#2 ;Checks if the stone is at the one step before thr edge of the board
+			;So the stone can not eat the stone of the opposing player at the edge of the board
+			beq blksMvs2
+			cmp r5,#140 ;Checks whether the stone is in one line before the last on the board 
+			;So the stone can not eat the stone of the opposing player at the end of the board
+			bge blksMvs2
+			mov r2,r4 ;Temporary position
+			add #16,r4
+			cmp Board(r4),#0 ;Checks whether the place is empty one step further
+			bne blksMvs2
+			add #1,r0 ;Adds the step to the number of possible steps
+			jmp blksMvs2
+;endcodeMvs - Returns the number of possible steps and finishes the program			
+endcodeMvs:	mov r0 ,NumMoves
+			rts (-sp),pc
+			
+;eatblksMvs2 - Checks whether a black stone has the possibility to eat in the right direction		
+eatblksMvs2:	cmp r3,#14 ;Checks if the stone is at the one step before thr edge of the board
+			;So the stone can not eat the stone of the opposing player at the edge of the board
+			beq advncMvs
+			cmp r5,#140 ;Checks whether the stone is in one line before the last on the board 
+			;So the stone can not eat the stone of the opposing player at the end of the board
+			bge advncMvs
+			mov r2,r4 ;Temporary position
+			add #22,r4
+			cmp Board(r4),#0 ;Checks whether the place is empty one step further
+			bne advncMvs
+			add #1,r0 ;Adds the step to the number of possible steps
+			jmp advncMvs
+;eatwhtsMvs - Checks whether a white stone has the possibility to eat in the left direction
+eatwhtsMvs:    cmp r3,#14 ;Checks if the stone is at the one step before thr edge of the board
+			;So the stone can not eat the stone of the opposing player at the edge of the board
+			beq whtsMvs2
+			cmp r5,#36 ;Checks whether the stone is in one line before the last on the board 
+			;So the stone can not eat the stone of the opposing player at the end of the board
+			ble whtsMvs2
+			mov r2,r4 ;Temporary position
+			sub #16,r4
+			cmp Board(r4),#0 ;Checks whether the place is empty one step further
+			bne whtsMvs2
+			add #1,r0 ;Adds the step to the number of possible steps
+			jmp whtsMvs2
+			
+;eatwhtsMvs2 - Checks whether a white stone has the possibility to eat in the right direction			
+eatwhtsMvs2:	cmp r3,#2 ;Checks if the stone is at the one step before thr edge of the board
+			;So the stone can not eat the stone of the opposing player at the edge of the board
+			beq advncMvs
+			cmp r5,#36 ;Checks whether the stone is in one line before the last on the board 
+			;So the stone can not eat the stone of the opposing player at the end of the board
+			ble advncMvs
+			mov r2,r4 ;Temporary position
+			sub #22,r4
+			cmp Board(r4),#0 ;Checks whether the place is empty one step further
+			bne advncMvs
+			add #1,r0 ;Adds the step to the number of possible steps
+			jmp advncMvs
+
+

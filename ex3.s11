@@ -9,8 +9,11 @@ checkWin:
 			jsr pc numOfStonesRival
 			test r0
 			beq end_win
-			jsr pc 
-			test r0
+			jsr pc numOfOptionsPlayer
+			mov r0 r1
+			jsr pc numOfOptionsRival
+			add r0 r1
+			test r1
 			beq who_have_more_stones
 			
 ; בדיקה לאיזה שחקן יש יותר אבנים אם לשחקן המשחק אז ניצחון אם לא אז הפסד או תיקו (אולי עוד לא נגמר המשחק)

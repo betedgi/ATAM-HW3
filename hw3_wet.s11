@@ -535,6 +535,18 @@ cngPlayer:
 			sub currPlr ,(sp) ;change player
 			mov (sp)+, currPlr ;change player
 			rts pc
+;change
+cngPlayer:
+			cmp #1, (sp) ; todo change to the place the currPlr in the STACK
+			beq cngToRvl
+			move #1, (sp)
+			rts pc
+
+cngToRvl:
+			move #2, (sp)
+			rts pc
+
+
 
 funUse: .blkw 1
 	;0-if the fuction is recursion 1-if the function purpose is to find the number of moves 2-to find the number of pieces

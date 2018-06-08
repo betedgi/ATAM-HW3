@@ -59,6 +59,10 @@ ehasMv:
 ;14-best destination
 ACalcWP:
 			jsr pc ,CalcWP
+			cmp (sp), Player
+			bne rtnRev
+
+eACalcWP:
 			mov r4, 6(sp)
 			mov #0, 10(sp)
 			mov NIL, 12(sp)
@@ -66,6 +70,11 @@ ACalcWP:
 			clr (sp)+
 			clr (sp)+
 			rts pc
+
+rtnRev:
+			neg r4
+			br eACalcWP
+
 
 CalcWP:
 			mov r0,-(sp) ;r0||return address||current player||address board
@@ -311,6 +320,7 @@ findMv:
 			jsr pc, hasMoves
 			cmp 4(sp), #0
 			bne edgCas;todo-edge case function for lose win tie and player has no moves
+			;todo-edge case return value by actual Player win-lose
 			cmp Steps, #0
 			beq ACalcWP
 			clr (sp)+
@@ -559,7 +569,7 @@ recur:
 			jsr r5, RmovPiece
 			dest2: .blkw 1
 			source2: .blkw 1
-			tst (sp)+ ;r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
+			clr (sp)+ ;r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			mov (sp)+, r2 ;r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			mov (sp)+, r0 ;r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			mov (sp)+, r5 ;r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest

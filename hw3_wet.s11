@@ -11,51 +11,64 @@ NIL = -30
 main:
 ;~~~~~~~~~~~~~~~~~~~~STACK-for hasMoves~~~~~~~~~~~~~~~~~~~~~~~~~
 ;0-return adress
-;2-current player
-;4-address of board
-;6-best WP
-;10-best win Parameter
-;12-best source
-;14-best destination
+;2-return adress for recursion
+;4-current player
+;6-address of board
+;10-best WP
+;12-best win Parameter
+;14-best source
+;16-best destination
 hasMoves:
-			mov r0,-(sp) ;r0||return address||current player||address board
-			mov r1,-(sp) ;r1||r0||return address||current player||address board
-			mov #2, -(sp) ;2||r1||r0||return address||current player||address board
-			clr -(sp) ;empty||2||r1||r0||return address||current player||address board
+			mov r0,-(sp) ;r0||return address|| return address||current player||address board
+			mov r1,-(sp) ;r1||r0||return address|| return address||current player||address board
+			mov #2, -(sp) ;2||r1||r0||return address|| return address||current player||address board *what for?
+			mov 10(sp),-(sp) ;current player||2||r1||r0||return address|| return address||current player||address board
+			clr -(sp) ;empty||current player||2||r1||r0||return address|| return address||current player||address board *no need change to tst -(sp)
 			jsr pc, numOmoves ;gets number of moves for current Player
 			mov (sp), r0
 			jsr pc, cngPlayer
 			jsr pc, numOmoves ;gets number of moves for current rival
 			mov (sp), r1
 			jsr pc, cngPlayer
-			clr (sp)+ ;2||r1||r0||return address||current player||address board
-			clr (sp)+ ;r1||r0||return address||current player||address board
+			clr (sp)+ ;2||r1||r0||return address|| return address||current player||address board
+			clr (sp)+ ;r1||r0||return address|| return address||current player||address board
 			cmp 0, r0
 			beq isMv
-			mov #0, 12(sp)
 			mov #0, 14(sp)
+			mov #0, 16(sp)
 			br ehasMv
 
 isMv:
-			mov #0, 12(sp)
-			mov NOMOV, 14(sp)
-			mov NIL, 16(sp)
-			mov NIL, 18(sp)
+			mov #0, 14(sp)
+			mov NOMOV, 16(sp)
+			mov NIL, 20(sp)
+			mov NIL, 22(sp)
 			br ehasMv
 
 ehasMv:
 			mov (sp)+, r1
 			mov (sp)+, r0
 			rts pc
-;~~~~~~~~~~~~~~~~~~~~STACK-for checkWin~~~~~~~~~~~~~~~~~~~~~~~~~
-;0-return adress
-;2-current player
-;4-address of board
+
+;~~~~~~~~~~~~~~~~~~~~STACK-for CalcWP~~~~~~~~~~~~~~~~~~~~~~~~~
+;0-current player
+;2-address of board
+;4-return adress
 ;6-best WP
 ;10-best win Parameter
 ;12-best source
 ;14-best destination
-checkWin:
+ACalcWP:
+			jsr pc ,CalcWP
+			mov r4, 6(sp)
+			mov #0, 10(sp)
+			mov NIL, 12(sp)
+			mov NIL, 14(sp)
+			clr (sp)+
+			clr (sp)+
+			rts pc
+
+CalcWP:
 			mov r0,-(sp) ;r0||return address||current player||address board
 			mov r1,-(sp) ;r1||r0||return address||current player||address board
 			mov #1, -(sp) ;1||r1||r0||return address||current player||address board
@@ -68,46 +81,73 @@ checkWin:
 			jsr pc, cngPlayer
 			clr (sp)+ ;1||r1||r0||return address||current player||address board
 			clr (sp)+ ;r1||r0||return address||current player||address board
+			sub r1, r0
+			mov r0, r4
+			rts pc
+
+;~~~~~~~~~~~~~~~~~~~~STACK-for checkWin~~~~~~~~~~~~~~~~~~~~~~~~~
+;0-return adress
+;2-return address for recursion
+;4-current player
+;6-address of board
+;10-best WP
+;12-best win Parameter
+;14-best source
+;16-best destination
+checkWin:
+			mov r0,-(sp) ;r0||return address|| return address||current player||address board
+			mov r1,-(sp) ;r1||r0||return address|| return address||current player||address board
+			mov #1, -(sp) ;1||r1||r0||return address|| return address||current player||address board
+			clr -(sp) ;empty||1||r1||r0||return address|| return address||current player||address board
+			jsr pc, numOmoves ;gets number of pieces for current Player
+			mov (sp), r0
+			jsr pc, cngPlayer
+			jsr pc, numOmoves ;gets number of pieces for current rival
+			mov (sp), r1
+			jsr pc, cngPlayer
+			clr (sp)+ ;1||r1||r0||return address|| return address||current player||address board
+			clr (sp)+ ;r1||r0||return address|| return address||current player||address board
 			cmp r1, 0
 			beq isWin
 			cmp r0, 0
 			beq isLose
-			mov r2,-(sp) ;r2||r1||r0||return address||current player||address board
-			mov #2, -(sp) ;1||r2||r1||r0||return address||current player||address board
-			clr -(sp) ;empty||1||r2||r1||r0||return address||current player||address board
+			mov r2,-(sp) ;r2||r1||r0||return address|| return address||current player||address board
+			mov #2, -(sp) ;1||r2||r1||r0||return address|| return address||current player||address board
+			clr -(sp) ;empty||1||r2||r1||r0||return address|| return address||current player||address board
 			jsr pc, numOmoves ;gets number of moves for current Player
 			mov (sp), r2
 			jsr pc, cngPlayer
 			jsr pc, numOmoves ;gets number of moves for current rival
 			add (sp), r2
 			jsr pc, cngPlayer
-			clr (sp)+ ;1||r2||r1||r0||return address||current player||address board
-			clr (sp)+ ;r2||r1||r0||return address||current player||address board
+			clr (sp)+ ;1||r2||r1||r0||return address|| return address||current player||address board
+			clr (sp)+ ;r2||r1||r0||return address|| return address||current player||address board
 			cmp 0, r2
 			beq isTie
-			mov #0, 12(sp)
+			mov (sp)+, r2
 			mov #0, 14(sp)
+			mov #0, 16(sp)
 			br eChckWin
 
 isWin:
-			mov #20, 12(sp)
-			mov WIN, 14(sp)
-			mov NIL, 16(sp)
-			mov NIL, 18(sp)
+			mov #20, 14(sp)
+			mov WIN, 16(sp)
+			mov NIL, 20(sp)
+			mov NIL, 22(sp)
 			br eChckWin
 isLose:
-			mov #-20, 12(sp)
-			mov LOSE, 14(sp)
-			mov NIL, 16(sp)
-			mov NIL, 18(sp)
+			mov #-20, 14(sp)
+			mov LOSE, 16(sp)
+			mov NIL, 20(sp)
+			mov NIL, 22(sp)
 			br eChckWin
 
 isTie:
 			mov (sp)+, r2
-			mov #0, 12(sp)
-			mov TIE, 14(sp)
-			mov NIL, 16(sp)
-			mov NIL, 18(sp)
+			mov #0, 14(sp)
+			mov TIE, 16(sp)
+			mov NIL, 20(sp)
+			mov NIL, 22(sp)
 			br eChckWin
 
 eChckWin:
@@ -123,7 +163,7 @@ eChckWin:
 minOrMax:
 			mov #1, r4 ;insert default value to register
 			mov @2(sp),r2 ;moves the value of Player to register 2
-			mov 4(sp),r3 ;moves the value of current Player to register 2
+			mov 4(sp),r3 ;moves the value of current Player to register 3
 			cmp r2, r3 ;check if the value is the same
 			beq eminOMax
 	    neg r4 ;if not negate the value of register 4 and returns it
@@ -196,8 +236,8 @@ RemPiece:
 ;4-current win param
 ;6-current source
 ;10-current dest
-;12-r2
-;14-r0
+;12-dest done
+;14-source done
 ;16-r5
 ;20-r4
 ;22-r3
@@ -237,7 +277,7 @@ chkLow:
 			blt cngVal
 			br ecmpWP
 
-chkLow:
+chkHig:
 			cmp 32(sp),2(sp)
 			bge cngVal
 			br ecmpWP
@@ -245,8 +285,8 @@ chkLow:
 cngVal:
 			mov 2(sp), 32(sp)
 			mov 4(sp), 34(sp)
-			mov 6(sp), 36(sp)
-			mov 10(sp), 40(sp)
+			mov 14(sp), 36(sp)
+			mov 12(sp), 40(sp)
 
 
 ;~~~~~~~~~~~~~~~~~~~~~STACK-for recursion~~~~~~~~~~~~~~~~~~~~~~
@@ -273,7 +313,7 @@ findMv:
 			cmp 4(sp), #0
 			bne edgCas;todo-edge case function for lose win tie and player has no moves
 			cmp Steps, #0
-			beq CalcWP
+			beq ACalcWP
 			clr (sp)+
 			clr (sp)+
 			br startMv
@@ -282,10 +322,11 @@ findMv:
 ;~~~~~~~~~~~~~~~~~~~~STACK-for finding number of moves or pieces~~~~~~~~~~
 			;0-return address
 			;2-num Of moves or pieces
-			;4-thing to do
+			;4-current player *change
+			;6-thing to do
 
 numOmoves:
-	    mov 4(sp), funAct
+	    mov 6(sp), funAct *change
 			clr r0 ;num of moves or num of Pieces Initialization to 0
 			clr r1
 			clr r2 ;Temporary position Initialization to 0
@@ -299,7 +340,7 @@ numOmoves:
 startMv:
 			mov r3, r2
 			add r5, r2     ;current position
-			cmp currPlr, #1 ;checks if player is one or two
+			cmp 4(sp), #1 ;checks if player is one or two *change
 			beq whtsMv
 
 ;blksMv - Checks whether the current location has a black stone
@@ -417,6 +458,7 @@ eblksMv:
 endcodeM:
 			cmp funUse, #0
 			beq ecodeM
+			mov #0, funUse
 			mov r0 ,2(sp)
 
 ecodeM: rts pc
@@ -530,23 +572,21 @@ recur:
 
 ;~~~~~~~~~~~~~~~~~~~~STACK-for change Player~~~~~~~~~~
 ;0-return address
+;cngPlayer:
+;			mov #3, -(sp) ;change player
+;			sub currPlr ,(sp) ;change player
+;			mov (sp)+, currPlr ;change player
+;			rts pc
+
+;change new cngPlayer
+;0-return address
+;2- currPlr
 cngPlayer:
-			mov #3, -(sp) ;change player
-			sub currPlr ,(sp) ;change player
-			mov (sp)+, currPlr ;change player
+			tst (sp)+
+			sub  #3 ,(sp) ;change player *can change to 2(sp) and remove tst lines
+			neg (sp) ;change player
+			tst -(sp)
 			rts pc
-;change
-cngPlayer:
-			cmp #1, (sp) ; todo change to the place the currPlr in the STACK
-			beq cngToRvl
-			move #1, (sp)
-			rts pc
-
-cngToRvl:
-			move #2, (sp)
-			rts pc
-
-
 
 funUse: .blkw 1
 	;0-if the fuction is recursion 1-if the function purpose is to find the number of moves 2-to find the number of pieces

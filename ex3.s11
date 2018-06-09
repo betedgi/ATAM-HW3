@@ -1,10 +1,10 @@
 .=torg +2000
 TIE = 25
 WIN = 1
-LOSE = -1
+LOSE = 111111111111111111
 NOMOV = 30
 NOVAL = 40
-NIL = -30
+NIL = 50
 
 main:
 		mov #main, sp;
@@ -26,8 +26,9 @@ main:
 getMaxWP:
 				clr -(sp)
 				clr -(sp)
-			  mov NOVAL, -(sp)
+			  mov #NOVAL, -(sp)
 				clr -(sp)
+				mov Player, currPlr
 				jsr pc, findMv  ; ||WP|| Win Parameter || source || dest||return address|| srcPos|| DstPos || WinParam
 				mov (sp), @16(sp)
 				mov 4(sp), @12(sp)
@@ -44,9 +45,13 @@ getMaxWP:
 ;6-best source
 ;10-best dest
 edgCas:
-				cmp 4(sp), TIE
+				mov #Board, -(sp)
+				mov currPlr, -(sp)
+				cmp 4(sp), #TIE
 				beq ACalcWP
-				cmp 4(sp), NOMOV
+				clr (sp)+
+				clr (sp)+
+				cmp 4(sp), #NOMOV
 				beq nomovE
 				mov currPlr, -(sp)
 				mov #Player, -(sp)
@@ -63,22 +68,22 @@ rtnRevE:
 			rts pc
 
 nomovE:
-			mov NOVAL, 4(sp) ;moves no value to Win parameter
+			mov #NOVAL, 4(sp) ;moves no value to Win parameter
 			jsr pc, recur ;game has no moves so doing nothing is the only choice
 			rts pc	;returns from the recursion becuase this son has nothing else to offer
 ;~~~~~~~~~~~~~~~~~~~~STACK-for hasMoves~~~~~~~~~~~~~~~~~~~~~~~~~
 ;0-return adress
-;2-return adress for recursion
-;4-current player
-;6-address of board
+;2-current player
+;4-address of board
+;6-return adress for recursion
 ;10-best WP
 ;12-best win Parameter
 ;14-best source
 ;16-best destination
-hasMoves:
+hasMoves: ;works
 			mov r0,-(sp) ;r0||return address|| return address||current player||address board
 			mov r1,-(sp) ;r1||r0||return address|| return address||current player||address board
-			mov #2, -(sp) ;2||r1||r0||return address|| return address||current player||address board
+			mov #1, -(sp) ;2||r1||r0||return address|| return address||current player||address board
 			clr -(sp) ;empty||2||r1||r0||return address|| return address||current player||address board
 			jsr pc, numOmoves ;gets number of moves for current Player
 			mov (sp), r0
@@ -90,15 +95,13 @@ hasMoves:
 			clr (sp)+ ;r1||r0||return address|| return address||current player||address board
 			cmp 0, r0
 			beq isMv
-			mov #0, 14(sp)
-			mov #0, 16(sp)
 			br ehasMv
 
 isMv:
 			mov #0, 14(sp)
-			mov NOMOV, 16(sp)
-			mov NIL, 20(sp)
-			mov NIL, 22(sp)
+			mov #NOMOV, 16(sp)
+			mov #NIL, 20(sp)
+			mov #NIL, 22(sp)
 			br ehasMv
 
 ehasMv:
@@ -122,8 +125,8 @@ ACalcWP:
 eACalcWP:
 			mov r4, 6(sp)
 			mov #0, 10(sp)
-			mov NIL, 12(sp)
-			mov NIL, 14(sp)
+			mov #NIL, 12(sp)
+			mov #NIL, 14(sp)
 			clr (sp)+
 			clr (sp)+
 			rts pc
@@ -134,50 +137,52 @@ rtnRev:
 
 
 CalcWP:
-			mov r0,-(sp) ;r0||return address||current player||address board
-			mov r1,-(sp) ;r1||r0||return address||current player||address board
-			mov #1, -(sp) ;1||r1||r0||return address||current player||address board
-			clr -(sp) ;empty||1||r1||r0||return address||current player||address board
+			mov r0,-(sp) ;r0||return address||return address||current player||address board
+			mov r1,-(sp) ;r1||r0||return address||return address||current player||address board
+			mov #1, -(sp) ;1||r1||r0||return address||return address||current player||address board
+			clr -(sp) ;empty||1||r1||r0||return address||return address||current player||address board
 			jsr pc, numOmoves ;gets number of pieces for current Player
 			mov (sp), r0
 			jsr pc, cngPlayer
 			jsr pc, numOmoves ;gets number of pieces for current rival
 			mov (sp), r1
 			jsr pc, cngPlayer
-			clr (sp)+ ;1||r1||r0||return address||current player||address board
-			clr (sp)+ ;r1||r0||return address||current player||address board
+			clr (sp)+ ;1||r1||r0||return address||return address||current player||address board
+			clr (sp)+ ;r1||r0||return address||return address||current player||address board
 			sub r1, r0
 			mov r0, r4
+			mov (sp)+, r1 ;r0||return address||return address||current player||address board
+			mov (sp)+, r0 ;return address||return address||current player||address board
 			rts pc
 
 ;~~~~~~~~~~~~~~~~~~~~STACK-for checkWin~~~~~~~~~~~~~~~~~~~~~~~~~
 ;0-return adress
-;2-return address for recursion
-;4-current player
-;6-address of board
+;2-current player
+;4-address of board
+;6-return address for recursion
 ;10-best WP
 ;12-best win Parameter
 ;14-best source
 ;16-best destination
-checkWin:
+checkWin:;works
 			mov r0,-(sp) ;r0||return address|| return address||current player||address board
 			mov r1,-(sp) ;r1||r0||return address|| return address||current player||address board
-			mov #1, -(sp) ;1||r1||r0||return address|| return address||current player||address board
-			clr -(sp) ;empty||1||r1||r0||return address|| return address||current player||address board
+			mov #2, -(sp) ;2||r1||r0||return address|| return address||current player||address board
+			clr -(sp) ;empty||2||r||r0||return address|| return address||current player||address board
 			jsr pc, numOmoves ;gets number of pieces for current Player
 			mov (sp), r0
 			jsr pc, cngPlayer
 			jsr pc, numOmoves ;gets number of pieces for current rival
 			mov (sp), r1
 			jsr pc, cngPlayer
-			clr (sp)+ ;1||r1||r0||return address|| return address||current player||address board
-			clr (sp)+ ;r1||r0||return address|| return address||current player||address board
-			cmp r1, 0
+			clr (sp)+ ;2||r2||r0||return address|| return address||current player||address board
+			clr (sp)+ ;r2||r0||return address|| return address||current player||address board
+			cmp r1, #0
 			beq isWin
-			cmp r0, 0
+			cmp r0, #0
 			beq isLose
-			mov r2,-(sp) ;r2||r1||r0||return address|| return address||current player||address board
-			mov #2, -(sp) ;1||r2||r1||r0||return address|| return address||current player||address board
+			mov r2,-(sp) ;r2||r2||r0||return address|| return address||current player||address board
+			mov #1, -(sp) ;1||r2||r1||r0||return address|| return address||current player||address board
 			clr -(sp) ;empty||1||r2||r1||r0||return address|| return address||current player||address board
 			jsr pc, numOmoves ;gets number of moves for current Player
 			mov (sp), r2
@@ -190,29 +195,27 @@ checkWin:
 			cmp 0, r2
 			beq isTie
 			mov (sp)+, r2
-			mov #0, 14(sp)
-			mov #0, 16(sp)
 			br eChckWin
 
 isWin:
 			mov #20, 14(sp)
-			mov WIN, 16(sp)
-			mov NIL, 20(sp)
-			mov NIL, 22(sp)
+			mov #WIN, 16(sp)
+			mov #NIL, 20(sp)
+			mov #NIL, 22(sp)
 			br eChckWin
 isLose:
 			mov #-20, 14(sp)
-			mov LOSE, 16(sp)
-			mov NIL, 20(sp)
-			mov NIL, 22(sp)
+			mov #LOSE, 16(sp)
+			mov #NIL, 20(sp)
+			mov #NIL, 22(sp)
 			br eChckWin
 
 isTie:
 			mov (sp)+, r2
 			mov #0, 14(sp)
-			mov TIE, 16(sp)
-			mov NIL, 20(sp)
-			mov NIL, 22(sp)
+			mov #TIE, 16(sp)
+			mov #NIL, 20(sp)
+			mov #NIL, 22(sp)
 			br eChckWin
 
 eChckWin:
@@ -243,13 +246,13 @@ eminOMax:
 ;0-return adress
 ;2-address Of Board
 movPiece:
-			mov @(r5)+, r1 ;gets desination
-			mov @(r5)+, r0 ;gets source
+			mov (r5)+, r1 ;gets desination
+			mov (r5)+, r0 ;gets source
 			add 2(sp), r1 ;moves to the address of destination
 			add 2(sp), r0 ;moves to the address of source
-			mov @(r0), @(r1)
+			mov (r0), (r1)
 			sub 2(sp), r1 ;returns destination to original value
-			mov #0, @(r0)
+			mov #0, (r0)
 			sub 2(sp), r0 ;returns source to original value
 			mov r1, r2 ;checks if a piece was eaten
 			sub r0, r2 ;checks if a piece was eaten
@@ -259,7 +262,7 @@ movPiece:
 			add r1, r2 ;clears the piece's position if it was eaten
 			div #2, r2 ;clears the piece's position if it was eaten
 			add 2(sp), r2 ;clears the piece's position if it was eaten
-			clr @(r2) ;clears the piece's position if it was eaten
+			clr (r2) ;clears the piece's position if it was eaten
 
 emPiece:
 			rts r5
@@ -268,13 +271,13 @@ emPiece:
 ;0-return adress
 ;2-address Of Board
 RmovPiece:
-			mov @(r5)+, r1 ;gets desination
-			mov @(r5)+, r0 ;gets source
+			mov (r5)+, r1 ;gets desination
+			mov (r5)+, r0 ;gets source
 			add 2(sp), r1 ;moves to the address of destination
 			add 2(sp), r0 ;moves to the address of source
-			mov @(r0), @(r1)
+			mov (r0), (r1)
 			sub 2(sp), r1 ;returns destination to original value
-			mov #0, @(r0)
+			mov #0, (r0)
 			sub 2(sp), r0 ;returns source to original value
 			mov r0, r2 ;checks if a piece was eaten
 			sub r1, r2 ;checks if a piece was eaten
@@ -285,9 +288,9 @@ RmovPiece:
 			div #2, r2 ;returns the piece that was eaten
 			add 2(sp), r2 ;returns the piece that was eaten
 			add 2(sp), r1 ;moves to the address of destination
-			mov @(r1), -(sp) ;gets the color of piece
+			mov (r1), -(sp) ;gets the color of piece
 			jsr pc, cngClr ;returns the piece that was eaten
-			mov (sp), @(r2) ;returns the piece that was eaten
+			mov (sp)+, (r2) ;returns the piece that was eaten
 			sub 2(sp), r1 ;returns destination to original value
 			clr (sp)+
 
@@ -314,7 +317,7 @@ RemPiece:
 ;36-best source
 ;40-best dest
 cprWP:
-			cmp 34(sp), NOVAL
+			cmp 34(sp), #NOVAL
 			beq cngVal
 			cmp 2(sp), #1
 			beq cngVal
@@ -329,15 +332,15 @@ cprWP:
 			beq chkLow
 			br chkHig
 
-ecmpWp:
+ecmpWP:
 	  	mov (sp), 10(sp)
-			clr -(sp)
-			clr -(sp)
-			clr -(sp)
-			clr -(sp)
+			clr (sp)+
+			clr (sp)+
+			clr (sp)+
+			clr (sp)+
 			rts pc
 
-chkLow:
+chkHig:
 			cmp 32(sp),2(sp)
 			blt cngVal
 			br ecmpWP
@@ -352,6 +355,7 @@ cngVal:
 			mov 4(sp), 34(sp)
 			mov 14(sp), 36(sp)
 			mov 12(sp), 40(sp)
+			br ecmpWP
 
 
 ;~~~~~~~~~~~~~~~~~~~~~STACK-for recursion~~~~~~~~~~~~~~~~~~~~~~
@@ -361,8 +365,13 @@ cngVal:
 ;6-best source
 ;10-best dest
 
+JedgCas:
+			jmp edgCas
+JACalcWP:
+			jmp ACalcWP
+
 findMv:
-			mov #0, funAct
+			mov #0, funUse
 	 	  clr r0 ;source Initialization to 0
 			clr r1
 			clr r2 ;destination Initialization to 0
@@ -372,14 +381,22 @@ findMv:
 			mov #Board, -(sp)
 			mov currPlr, -(sp)
 			jsr pc, checkWin
-			cmp 4(sp), #0
-			bne edgCas;todo-edge case function for lose win tie and player has no moves
+			clr (sp)+
+			clr (sp)+
+			cmp 4(sp), #NOVAL
+			bne JedgCas;todo-edge case function for lose win tie and player has no moves
+			mov #Board, -(sp)
+			mov currPlr, -(sp)
 			jsr pc, hasMoves
-			cmp 4(sp), #0
-			bne edgCas;todo-edge case function for lose win tie and player has no moves
+			clr (sp)+
+			clr (sp)+
+			cmp 4(sp), #NOVAL
+			bne JedgCas;todo-edge case function for lose win tie and player has no moves
 			;todo-edge case return value by actual Player win-lose
+			mov #Board, -(sp)
+			mov currPlr, -(sp)
 			cmp Steps, #0
-			beq ACalcWP
+			beq JACalcWP
 			clr (sp)+
 			clr (sp)+
 			br startMv
@@ -391,7 +408,13 @@ findMv:
 			;4-thing to do
 
 numOmoves:
-	    mov 4(sp), funAct
+	    mov 4(sp), funUse
+			mov r0, -(sp)
+			mov r1, -(sp)
+			mov r2, -(sp)
+			mov r3, -(sp)
+			mov r4, -(sp)
+			mov r5, -(sp)
 			clr r0 ;num of moves or num of Pieces Initialization to 0
 			clr r1
 			clr r2 ;Temporary position Initialization to 0
@@ -402,12 +425,22 @@ numOmoves:
 
 ;startMv - Updates the current position by the row and column index
 ;moves to a black or white label in accordance with the number of the player
+
+
 startMv:
 			mov r3, r2
 			add r5, r2     ;current position
+			cmp r2,#200
+			bge JendcodeM
 			cmp currPlr, #1 ;checks if player is one or two
 			beq whtsMv
+			br blksMv
 
+JendcodeM:
+			jmp endcodeM
+
+JincPiec:
+			jmp incPiec
 ;blksMv - Checks whether the current location has a black stone
 ;And the stone option to move left
 blksMv:
@@ -415,7 +448,7 @@ blksMv:
 			;has a stone of player number 2
 			bne advncMv
 			cmp funUse,#2 ;check if the function is counting pieces
-			beq incPiec
+			beq JincPiec
 			cmp r2,#160 ;Checks whether the current location we are testing
 			;is the last line for player 2
 			bge endcodeM
@@ -466,7 +499,7 @@ whtsMv:
 			;has a stone of player number 1
 			bne advncMv
 			cmp funUse,#2 ;check if the function is counting pieces
-			beq incPiec
+			beq JincPiec
 			cmp r2,#16 ;Checks whether the current location we are testing
 			;is the last line for player 1
 			ble advncMv
@@ -510,11 +543,12 @@ eblksMv:
 			;So the stone can not e the stone of the opposing player at the end of the board
 			bge blksMv2
 			mov r2,r4 ;Temporary position
-			add #16,r4
-			cmp Board(r4),#0 ;Checks whether the place is empty one step further
+			add #16,r2
+			cmp Board(r2),#0 ;Checks whether the place is empty one step further
 			bne blksMv2
 			jsr pc ,funAct
 			mov #0, r1
+			mov r4, r2
 			jmp blksMv2
 
 
@@ -524,7 +558,14 @@ endcodeM:
 			cmp funUse, #0
 			beq ecodeM
 			mov #0, funUse
-			mov r0 ,2(sp)
+			mov (sp)+, r5
+			mov (sp)+, r4
+   		mov (sp)+, r3
+			mov (sp)+, r2
+			mov (sp)+, r1
+			mov r0 ,4(sp)
+			mov (sp)+, r0
+
 
 ecodeM: rts pc
 ;eblksMv2 - Checks whether a black stone has the possibility to e in the right direction
@@ -536,11 +577,15 @@ eblksMv2:
 			;So the stone can not e the stone of the opposing player at the end of the board
 			bge advncMv
 			mov r2,r4 ;Temporary position
-			add #22,r4
-			cmp Board(r4),#0 ;Checks whether the place is empty one step further
+			add #22,r2
+			cmp Board(r2),#0 ;Checks whether the place is empty one step further
 			bne advncMv
 			jsr pc ,funAct
 			mov #0, r1
+			mov r4, r2
+			jmp advncMv
+
+JadvncMv:
 			jmp advncMv
 
 ;ewhtsMv - Checks whether a white stone has the possibility to e in the left direction
@@ -552,27 +597,29 @@ ewhtsMv:
 			;So the stone can not e the stone of the opposing player at the end of the board
 			ble whtsMv2
 			mov r2,r4 ;Temporary position
-			sub #16,r4
-			cmp Board(r4),#0 ;Checks whether the place is empty one step further
+			sub #16,r2
+			cmp Board(r2),#0 ;Checks whether the place is empty one step further
 			bne whtsMv2
 			jsr pc ,funAct
 			mov #0, r1
+			mov r4, r2
 			jmp whtsMv2
 
 ;ewhtsMv2 - Checks whether a white stone has the possibility to e in the right direction
 ewhtsMv2:
 			cmp r3,#2 ;Checks if the stone is at the one step before thr edge of the board
 			;So the stone can not e the stone of the opposing player at the edge of the board
-			beq advncMv
+			beq JadvncMv
 			cmp r5,#36 ;Checks whether the stone is in one line before the last on the board
 			;So the stone can not e the stone of the opposing player at the end of the board
-			ble advncMv
+			ble JadvncMv
 			mov r2,r4 ;Temporary position
-			sub #22,r4
-			cmp Board(r4),#0 ;Checks whether the place is empty one step further
-			bne advncMv
+			sub #22,r2
+			cmp Board(r2),#0 ;Checks whether the place is empty one step further
+			bne JadvncMv
 			jsr pc ,funAct
 			mov #0, r1
+			mov r4, r2
 			jmp advncMv
 
 incPiec:
@@ -607,12 +654,14 @@ recur:
 			mov r2, -(sp)	;r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			mov (sp), dest1 ;move pieces on board
 			mov 2(sp), source1 ;move pieces on board
+			mov #Board, -(sp)
 			jsr r5, movPiece ;move pieces on board
 			dest1: .blkw 1 ;move pieces on board
 			source1: .blkw 1 ;move pieces on board
+			clr (sp)+
 			clr -(sp) ;dest||r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			clr -(sp) ;source||dest||r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
-			mov NOVAL, -(sp) ;win param||source||dest||r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
+			mov #NOVAL, -(sp) ;win param||source||dest||r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			clr  -(sp) ;wp||win param||source||dest||r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			jsr pc, cngPlayer
 			dec Steps ;decreases the number of steps remaining
@@ -621,11 +670,13 @@ recur:
 			jsr pc, cngPlayer
 			jsr pc, cprWP
 			mov 2(sp) ,-(sp) ;r0||r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
-			mov 2(sp), dest2
-			mov 4(sp), source2
+			mov (sp), dest2
+			mov 2(sp), source2
+			mov #Board, -(sp)
 			jsr r5, RmovPiece
 			dest2: .blkw 1
 			source2: .blkw 1
+			clr (sp)+
 			clr (sp)+ ;r2||r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			mov (sp)+, r2 ;r0||r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
 			mov (sp)+, r0 ;r5||r4||r3||r1||return address|| return address|| best WP||best Win Parameter|| best source || best dest
@@ -658,6 +709,19 @@ cngClr:
 			rts pc
 ;~~~~~~~~~~~~~~~~~~~~~~~Input Label~~~~~~~~~~~~~~~~~~~~~
 
-Board:
-Steps:
-Player:
+.=torg+11000
+Board:	.word	0, 0, 0, 0, 0, 0, 0, 0
+				.word	0, 0, 0, 0, 0, 0, 0, 0
+				.word	0, 0, 0, 0, 0, 0, 0, 0
+				.word	0, 0, 2, 0, 0, 0, 0, 0
+				.word	0, 0, 0, 1, 0, 0, 0, 0
+				.word	0, 0, 0, 0, 1, 0, 0, 0
+				.word	0, 0, 0, 0, 0, 0, 0, 0
+				.word	0, 0, 0, 0, 0, 0, 0, 0
+Player:	.word	1
+Steps:  .word   2
+
+;output
+SrcPos: .blkw 1
+DstPos: .blkw 1
+WinParam: .blkw 1

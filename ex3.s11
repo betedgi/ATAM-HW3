@@ -1,7 +1,7 @@
 .=torg +2000
 TIE = 25
 WIN = 1
-LOSE = 111111111111111111
+LOSE = 177777
 NOMOV = 30
 NOVAL = 40
 NIL = 50
@@ -24,12 +24,20 @@ main:
 ;4-address for DstPos
 ;6-address for WinParam
 getMaxWP:
-				clr -(sp)
-				clr -(sp)
-			  mov #NOVAL, -(sp)
+				mov #3, -(sp)
 				clr -(sp)
 				mov Player, currPlr
+				jsr pc, numOmoves
+				mov (sp), r0
+				clr (sp)+
+				clr (sp)+
+				mov r0, -(sp)
+				mov r0, -(sp)
+			  mov #NOVAL, -(sp)
+				clr -(sp)
 				jsr pc, findMv  ; ||WP|| Win Parameter || source || dest||return address|| srcPos|| DstPos || WinParam
+				asr 4(sp)
+				asr 6(sp)
 				mov (sp), @16(sp)
 				mov 4(sp), @12(sp)
 				mov 6(sp), @14(sp)
@@ -100,8 +108,6 @@ hasMoves: ;works
 isMv:
 			mov #0, 14(sp)
 			mov #NOMOV, 16(sp)
-			mov #NIL, 20(sp)
-			mov #NIL, 22(sp)
 			br ehasMv
 
 ehasMv:
@@ -125,8 +131,6 @@ ACalcWP:
 eACalcWP:
 			mov r4, 6(sp)
 			mov #0, 10(sp)
-			mov #NIL, 12(sp)
-			mov #NIL, 14(sp)
 			clr (sp)+
 			clr (sp)+
 			rts pc
@@ -200,22 +204,16 @@ checkWin:;works
 isWin:
 			mov #20, 14(sp)
 			mov #WIN, 16(sp)
-			mov #NIL, 20(sp)
-			mov #NIL, 22(sp)
 			br eChckWin
 isLose:
 			mov #-20, 14(sp)
 			mov #LOSE, 16(sp)
-			mov #NIL, 20(sp)
-			mov #NIL, 22(sp)
 			br eChckWin
 
 isTie:
 			mov (sp)+, r2
 			mov #0, 14(sp)
 			mov #TIE, 16(sp)
-			mov #NIL, 20(sp)
-			mov #NIL, 22(sp)
 			br eChckWin
 
 eChckWin:
@@ -256,11 +254,12 @@ movPiece:
 			sub 2(sp), r0 ;returns source to original value
 			mov r1, r2 ;checks if a piece was eaten
 			sub r0, r2 ;checks if a piece was eaten
-			cmp r2, #20 ;checks if a piece was eaten
-			blos emPiece ;checks if a piece was eaten
+			jsr pc, chkN
+			cmp r2, #32 ;checks if a piece was eaten
+			ble emPiece ;checks if a piece was eaten
 			mov r0, r2 ;clears the piece's position if it was eaten
 			add r1, r2 ;clears the piece's position if it was eaten
-			div #2, r2 ;clears the piece's position if it was eaten
+			asr r2 ;clears the piece's position if it was eaten
 			add 2(sp), r2 ;clears the piece's position if it was eaten
 			clr (r2) ;clears the piece's position if it was eaten
 
@@ -279,23 +278,30 @@ RmovPiece:
 			sub 2(sp), r1 ;returns destination to original value
 			mov #0, (r0)
 			sub 2(sp), r0 ;returns source to original value
-			mov r0, r2 ;checks if a piece was eaten
-			sub r1, r2 ;checks if a piece was eaten
-			cmp r2, #20 ;checks if a piece was eaten
-			blos RemPiece ;checks if a piece was eaten
+			mov r1, r2 ;checks if a piece was eaten
+			sub r0, r2 ;checks if a piece was eaten
+			jsr pc, chkN
+			cmp r2, #32 ;checks if a piece was eaten
+			ble RemPiece ;checks if a piece was eaten
 			mov r0, r2 ;returns the piece that was eaten
 			add r1, r2 ;returns the piece that was eaten
-			div #2, r2 ;returns the piece that was eaten
+			asr r2 ;returns the piece that was eaten
 			add 2(sp), r2 ;returns the piece that was eaten
 			add 2(sp), r1 ;moves to the address of destination
 			mov (r1), -(sp) ;gets the color of piece
 			jsr pc, cngClr ;returns the piece that was eaten
 			mov (sp)+, (r2) ;returns the piece that was eaten
 			sub 2(sp), r1 ;returns destination to original value
-			clr (sp)+
 
 RemPiece:
 			rts r5
+chkN:
+			tst r2
+			blt negV
+			rts pc
+negV:
+			neg r2
+			rts pc
 
 ;~~~~~~~~~~~~~~~~~~~~~STACK-for cmpWP~~~~~~~~~~~~~~~~~~~~~~
 ;todo-check if right
@@ -317,11 +323,11 @@ RemPiece:
 ;36-best source
 ;40-best dest
 cprWP:
+			cmp 4(sp), #1
+			beq cngVal
 			cmp 34(sp), #NOVAL
 			beq cngVal
-			cmp 2(sp), #1
-			beq cngVal
-			cmp 2(sp), #-1
+			cmp 4(sp), #-1
 			beq ecmpWP
 			mov currPlr, -(sp)
 			mov #Player, -(sp)
@@ -356,7 +362,6 @@ cngVal:
 			mov 14(sp), 36(sp)
 			mov 12(sp), 40(sp)
 			br ecmpWP
-
 
 ;~~~~~~~~~~~~~~~~~~~~~STACK-for recursion~~~~~~~~~~~~~~~~~~~~~~
 ;0-return address
@@ -404,7 +409,7 @@ findMv:
 
 ;~~~~~~~~~~~~~~~~~~~~STACK-for finding number of moves or pieces~~~~~~~~~~
 			;0-return address
-			;2-num Of moves or pieces
+			;2-num Of moves or pieces or source
 			;4-thing to do
 
 numOmoves:
@@ -448,7 +453,7 @@ blksMv:
 			;has a stone of player number 2
 			bne advncMv
 			cmp funUse,#2 ;check if the function is counting pieces
-			beq JincPiec
+			bge JincPiec
 			cmp r2,#160 ;Checks whether the current location we are testing
 			;is the last line for player 2
 			bge endcodeM
@@ -499,7 +504,7 @@ whtsMv:
 			;has a stone of player number 1
 			bne advncMv
 			cmp funUse,#2 ;check if the function is counting pieces
-			beq JincPiec
+			bge JincPiec
 			cmp r2,#16 ;Checks whether the current location we are testing
 			;is the last line for player 1
 			ble advncMv
@@ -623,8 +628,20 @@ ewhtsMv2:
 			jmp advncMv
 
 incPiec:
+			cmp funUse,#3
+			beq rtnPiec
 			inc r0
 			jmp advncMv
+
+rtnPiec:
+			mov (sp)+, r5
+			mov (sp)+, r4
+			mov (sp)+, r3
+			mov r2, 10(sp)
+			mov (sp)+, r2
+			mov (sp)+, r1
+			mov (sp)+, r0
+			rts pc
 
 funAct:
 			cmp #1, funUse ;Adds the step to the number of possible steps
@@ -708,7 +725,6 @@ cngClr:
 			clr (sp)+
 			rts pc
 ;~~~~~~~~~~~~~~~~~~~~~~~Input Label~~~~~~~~~~~~~~~~~~~~~
-
 .=torg+11000
 Board:	.word	0, 0, 0, 0, 0, 0, 0, 0
 				.word	0, 0, 0, 0, 0, 0, 0, 0
@@ -724,4 +740,4 @@ Steps:  .word   2
 ;output
 SrcPos: .blkw 1
 DstPos: .blkw 1
-WinParam: .blkw 1
+WinParam: .blkw 1 

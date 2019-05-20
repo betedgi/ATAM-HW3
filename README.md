@@ -1,2 +1,2 @@
 # ATAM-HW3
-234118 homework project for class ATAM in recursion and Structures in assembly
+Homework 3 Project for Course ATAM (234118) about Recursion and Structures in Assembly (PDP-11)
